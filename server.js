@@ -1,6 +1,62 @@
-{
-    "CGRS": {
-            "CGRSRegistration_Response": {
+const express = require('express');
+const app = express();
+const PORT = 3001;
+
+app.use(express.json());
+
+// Route 1: /statement/v1/eq-dtxn-chrg or /statement/v1/eq-ltxn-chrg
+app.get(['/statement/v1/eq-dtxn-chrg', '/statement/v1/eq-ltxn-chrg'], (req, res) => {
+    res.json({
+        "MainStatement_Response": {
+                "metaData": {
+                    "status": {
+                        "code": "200",
+                        "desc": "Success"
+                    }
+                },
+                "Body": {
+                    "Payload": {
+                        "Collection": [{
+                            "Valid_Date": "13032024",
+                            "Post_Date": "13032024",
+                            "Transaction_Type": "DR",
+                            "Narration": "Excess wdl charges",
+                            "Amount": "300.000"
+                        }, {
+                            "Valid_Date": "13032024",
+                            "Post_Date": "13032024",
+                            "Transaction_Type": "DR",
+                            "Narration": "ATM AMC CHGS",
+                            "Amount": "118.000"
+                        }, {
+                            "Valid_Date": "14032024",
+                            "Post_Date": "14032024",
+                            "Transaction_Type": "DR",
+                            "Narration": "Cash handling charges",
+                            "Amount": "1000.000"
+                        }, {
+                            "Valid_Date": "14032024",
+                            "Post_Date": "14032024",
+                            "Transaction_Type": "DR",
+                            "Narration": "ATM WDL CHARGES",
+                            "Amount": "14.000"
+                        }, {
+                            "Valid_Date": "14032024",
+                            "Post_Date": "14032024",
+                            "Transaction_Type": "DR",
+                            "Narration": "MIN BAL CHGS",
+                            "Amount": "36.000"
+                        }]
+                    }
+                }
+            }
+    });
+});
+
+// Route 2: /chatbot/v1/ct-complaint-cgrs
+app.get('/chatbot/v1/ct-complaint-cgrs', (req, res) => {
+    res.json({
+        "CGRSRegistration_Response": {
                 "metadata": {
                     "status": {
                         "Code": "200", 
@@ -20,30 +76,13 @@
                         }
                     }
                 }
-        },
-    "ChequeBookTracking": {
-            "ChequeBookTracking_Response": {
-              "metadata": {
-                "status": {
-                  "Code": "200",
-                  "Desc": "Success"
-                }
-              },
-              "Body": {
-                "Payload": {
-                  "Status": "SUCCESS",
-                  "Message": "",
-                  "TrackingList": [{
-                    "Name": "Saurabh Dalmia",
-                    "TrackingID": "AX254201394IN",
-                    "BookingDate": "22/02/2023"
-                  }]
-                }
-              }
-            }
-        },
-    "LoanAcctEnq": {
-        "LoanAcctEnq_Response": {
+    });
+});
+
+// Route 3: /enquiry/v1/eq-ln-dtl
+app.get('/enquiry/v1/eq-ln-dtl', (req, res) => {
+    res.json({
+       "LoanAcctEnq_Response": {
             "metaData": {
                 "status": {
                     "code": "200",
@@ -128,83 +167,35 @@
                 }
             }
         }
-    },
-    "LoanMainStatement": {
-        "LoanMainStatement_Response": {
-            "metaData": {
+    });
+});
+
+// Route 4: /cheque-service/v1/eq-chkbk-sts
+app.get('/cheque-service/v1/eq-chkbk-sts', (req, res) => {
+    res.json({
+        "ChequeBookTracking_Response": {
+              "metadata": {
                 "status": {
-                    "code": "200",
-                    "desc": "Success"
+                  "Code": "200",
+                  "Desc": "Success"
                 }
-            },
-            "Body": {
+              },
+              "Body": {
                 "Payload": {
-                    "Collection": [{
-                        "Valid_Date": "13032024",
-                        "Post_Date": "13032024",
-                        "Transaction_Type": "DR",
-                        "Narration": "Excess wdl charges",
-                        "Amount": "300.000"
-                    }, {
-                        "Valid_Date": "14032024",
-                        "Post_Date": "14032024",
-                        "Transaction_Type": "DR",
-                        "Narration": "ATM AMC CHGS",
-                        "Amount": "500.000"
-                    }, {
-                        "Valid_Date": "14032024",
-                        "Post_Date": "14032024",
-                        "Transaction_Type": "DR",
-                        "Narration": "Cash handling charges",
-                        "Amount": "1000.000"
-                    }]
+                  "Status": "SUCCESS",
+                  "Message": "",
+                  "TrackingList": [{
+                    "Name": "Saurabh Dalmia",
+                    "TrackingID": "AX254201394IN",
+                    "BookingDate": "22/02/2023"
+                  }]
                 }
+              }
             }
-        }
-    },
-    "Transactions": {
-        "MainStatement_Response": {
-            "metaData": {
-                "status": {
-                    "code": "200",
-                    "desc": "Success"
-                }
-            },
-            "Body": {
-                "Payload": {
-                    "Collection": [{
-                        "Valid_Date": "13032024",
-                        "Post_Date": "13032024",
-                        "Transaction_Type": "DR",
-                        "Narration": "Excess wdl charges",
-                        "Amount": "300.000"
-                    }, {
-                        "Valid_Date": "13032024",
-                        "Post_Date": "13032024",
-                        "Transaction_Type": "DR",
-                        "Narration": "ATM AMC CHGS",
-                        "Amount": "118.000"
-                    }, {
-                        "Valid_Date": "14032024",
-                        "Post_Date": "14032024",
-                        "Transaction_Type": "DR",
-                        "Narration": "Cash handling charges",
-                        "Amount": "1000.000"
-                    }, {
-                        "Valid_Date": "14032024",
-                        "Post_Date": "14032024",
-                        "Transaction_Type": "DR",
-                        "Narration": "ATM WDL CHARGES",
-                        "Amount": "14.000"
-                    }, {
-                        "Valid_Date": "14032024",
-                        "Post_Date": "14032024",
-                        "Transaction_Type": "DR",
-                        "Narration": "MIN BAL CHGS",
-                        "Amount": "36.000"
-                    }]
-                }
-            }
-        }
-    }
-  }
+    });
+});
+
+// Start the server
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
