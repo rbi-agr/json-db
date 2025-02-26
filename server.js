@@ -5,7 +5,7 @@ const PORT = 3001;
 app.use(express.json());
 
 // Route 1: /statement/v1/eq-dtxn-chrg or /statement/v1/eq-ltxn-chrg
-app.get(['/statement/v1/eq-dtxn-chrg', '/statement/v1/eq-ltxn-chrg'], (req, res) => {
+app.post(['/statement/v1/eq-dtxn-chrg', '/statement/v1/eq-ltxn-chrg'], (req, res) => {
     res.json({
         "MainStatement_Response": {
                 "metaData": {
@@ -54,7 +54,7 @@ app.get(['/statement/v1/eq-dtxn-chrg', '/statement/v1/eq-ltxn-chrg'], (req, res)
 });
 
 // Route 2: /chatbot/v1/ct-complaint-cgrs
-app.get('/chatbot/v1/ct-complaint-cgrs', (req, res) => {
+app.post('/chatbot/v1/ct-complaint-cgrs', (req, res) => {
     res.json({
         "CGRSRegistration_Response": {
                 "metadata": {
@@ -80,7 +80,7 @@ app.get('/chatbot/v1/ct-complaint-cgrs', (req, res) => {
 });
 
 // Route 3: /enquiry/v1/eq-ln-dtl
-app.get('/enquiry/v1/eq-ln-dtl', (req, res) => {
+app.post('/enquiry/v1/eq-ln-dtl', (req, res) => {
     res.json({
        "LoanAcctEnq_Response": {
             "metaData": {
@@ -171,7 +171,7 @@ app.get('/enquiry/v1/eq-ln-dtl', (req, res) => {
 });
 
 // Route 4: /cheque-service/v1/eq-chkbk-sts
-app.get('/cheque-service/v1/eq-chkbk-sts', (req, res) => {
+app.post('/cheque-service/v1/eq-chkbk-sts', (req, res) => {
     res.json({
         "ChequeBookTracking_Response": {
               "metadata": {
