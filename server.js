@@ -2,56 +2,196 @@ const express = require('express');
 const app = express();
 const PORT = 3001;
 
+const DEFAULT_ACCOUNT = "SB-111111111";
+
+const formatDate = (date) => {
+    const d = date.getDate().toString().padStart(2, '0');
+    const m = (date.getMonth() + 1).toString().padStart(2, '0');
+    const y = date.getFullYear().toString();
+    return `${d}${m}${y}`;
+};
+
+const parseDDMMYYYY = (str) => {
+    const day = parseInt(str.slice(0, 2), 10);
+    const month = parseInt(str.slice(2, 4), 10) - 1;
+    const year = parseInt(str.slice(4), 10);
+    return new Date(year, month, day);
+};
+
+const activityTypes = [
+    "purchase at Amazon",
+    "online order via Flipkart",
+    "fuel payment at IndianOil",
+    "POS at Big Bazaar",
+    "mobile recharge via Paytm",
+    "utility bill on PhonePe",
+    "cash withdrawal at SBI ATM",
+    "grocery at DMart",
+    "travel booking via IRCTC",
+    "electronics at Croma"
+];
+
+const accountList = ["SB-111111111", "SB-222222222", "SB-999999999"];
+
+const generateTransactionsForDate = (accountNumber, date) => {
+    const formattedDate = formatDate(date);
+    const transactions = [];
+    const transactionCount = Math.floor(Math.random() * 4) + 5;
+
+    for (let i = 0; i < transactionCount; i++) {
+        const activity = activityTypes[Math.floor(Math.random() * activityTypes.length)];
+        const purchaseAmount = Math.floor(Math.random() * (60000 - 1000 + 1)) + 1000;
+        const excessCharge = Math.floor(Math.random() * (700 - 100 + 1)) + 100;
+
+        transactions.push({
+            Account_Number: accountNumber,
+            Valid_Date: formattedDate,
+            Post_Date: formattedDate,
+            Transaction_Type: "DR",
+            Narration: `Transaction of ₹${purchaseAmount} (${activity})`,
+            Amount: purchaseAmount.toFixed(2)
+        });
+
+        transactions.push({
+            Account_Number: accountNumber,
+            Valid_Date: formattedDate,
+            Post_Date: formattedDate,
+            Transaction_Type: "DR",
+            Narration: `Excess bank charge for ${activity}`,
+            Amount: excessCharge.toFixed(2)
+        });
+    }
+
+    return transactions;
+};
+
+const generateRealisticTransactionsFor7Days = () => {
+    const allTransactions = [];
+    const today = new Date();
+
+    for (let i = 0; i < 7; i++) {
+        const currentDate = new Date(today);
+        currentDate.setDate(today.getDate() - i);
+
+        for (const acc of accountList) {
+            const txns = generateTransactionsForDate(acc, currentDate);
+            allTransactions.push(...txns);
+        }
+    }
+
+    return allTransactions;
+};
+
 app.use(express.json());
 
-// Route 1: /statement/v1/eq-dtxn-chrg or /statement/v1/eq-ltxn-chrg
 app.post(['/statement/v1/eq-dtxn-chrg', '/statement/v1/eq-ltxn-chrg'], (req, res) => {
-    res.json({
-        "MainStatement_Response": {
-                "metaData": {
-                    "status": {
-                        "code": "200",
-                        "desc": "Success"
-                    }
-                },
-                "Body": {
-                    "Payload": {
-                        "Collection": [{
-                            "Valid_Date": "13032024",
-                            "Post_Date": "13032024",
-                            "Transaction_Type": "DR",
-                            "Narration": "Excess wdl charges",
-                            "Amount": "300.000"
-                        }, {
-                            "Valid_Date": "13032024",
-                            "Post_Date": "13032024",
-                            "Transaction_Type": "DR",
-                            "Narration": "ATM AMC CHGS",
-                            "Amount": "118.000"
-                        }, {
-                            "Valid_Date": "14032024",
-                            "Post_Date": "14032024",
-                            "Transaction_Type": "DR",
-                            "Narration": "Cash handling charges",
-                            "Amount": "1000.000"
-                        }, {
-                            "Valid_Date": "14032024",
-                            "Post_Date": "14032024",
-                            "Transaction_Type": "DR",
-                            "Narration": "ATM WDL CHARGES",
-                            "Amount": "14.000"
-                        }, {
-                            "Valid_Date": "14032024",
-                            "Post_Date": "14032024",
-                            "Transaction_Type": "DR",
-                            "Narration": "MIN BAL CHGS",
-                            "Amount": "36.000"
-                        }]
+    let { accountNumber, fromDate } = req.query;
+
+    const today = new Date();
+    const past7 = new Date(today);
+    past7.setDate(today.getDate() - 6);
+
+    const allTransactions = generateRealisticTransactionsFor7Days();
+
+    let filteredTransactions = allTransactions;
+
+    // Filter by account number if provided
+    if (accountNumber) {
+        filteredTransactions = filteredTransactions.filter(
+            txn => txn.Account_Number === accountNumber
+        );
+    }
+
+    // Filter by date if provided
+    if (fromDate) {
+        const fromDateObj = parseDDMMYYYY(fromDate);
+        if (fromDateObj < past7 || fromDateObj > today) {
+            return res.json({
+                "MainStatement_Response": {
+                    "metaData": {
+                        "status": {
+                            "code": "400",
+                            "desc": "Data only available for the past 7 days."
+                        }
                     }
                 }
+            });
+        }
+
+        const formatted = formatDate(fromDateObj);
+        filteredTransactions = filteredTransactions.filter(
+            txn => txn.Valid_Date === formatted
+        );
+    }
+
+    const limit = Math.floor(Math.random() * 2) + 3; // 3 or 4
+    const limitedTransactions = filteredTransactions.slice(0, limit);
+
+    res.json({
+        "MainStatement_Response": {
+            "metaData": {
+                "status": {
+                    "code": "200",
+                    "desc": "Success"
+                }
+            },
+            "Body": {
+                "Payload": {
+                    "Collection": limitedTransactions
+                }
             }
+        }
     });
 });
+
+// Route 1: /statement/v1/eq-dtxn-chrg or /statement/v1/eq-ltxn-chrg
+// app.post(['/statement/v1/eq-dtxn-chrg', '/statement/v1/eq-ltxn-chrg'], (req, res) => {
+//     res.json({
+//         "MainStatement_Response": {
+//                 "metaData": {
+//                     "status": {
+//                         "code": "200",
+//                         "desc": "Success"
+//                     }
+//                 },
+//                 "Body": {
+//                     "Payload": {
+//                         "Collection": [{
+//                             "Valid_Date": "13032024",
+//                             "Post_Date": "13032024",
+//                             "Transaction_Type": "DR",
+//                             "Narration": "Excess wdl charges",
+//                             "Amount": "300.000"
+//                         }, {
+//                             "Valid_Date": "13032024",
+//                             "Post_Date": "13032024",
+//                             "Transaction_Type": "DR",
+//                             "Narration": "ATM AMC CHGS",
+//                             "Amount": "118.000"
+//                         }, {
+//                             "Valid_Date": "14032024",
+//                             "Post_Date": "14032024",
+//                             "Transaction_Type": "DR",
+//                             "Narration": "Cash handling charges",
+//                             "Amount": "1000.000"
+//                         }, {
+//                             "Valid_Date": "14032024",
+//                             "Post_Date": "14032024",
+//                             "Transaction_Type": "DR",
+//                             "Narration": "ATM WDL CHARGES",
+//                             "Amount": "14.000"
+//                         }, {
+//                             "Valid_Date": "14032024",
+//                             "Post_Date": "14032024",
+//                             "Transaction_Type": "DR",
+//                             "Narration": "MIN BAL CHGS",
+//                             "Amount": "36.000"
+//                         }]
+//                     }
+//                 }
+//             }
+//     });
+// });
 
 // Route 2: /chatbot/v1/ct-complaint-cgrs
 app.post('/chatbot/v1/ct-complaint-cgrs', (req, res) => {
