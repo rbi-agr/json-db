@@ -19,19 +19,14 @@ const parseDDMMYYYY = (str) => {
 };
 
 const activityTypes = [
-    "purchase at Amazon",
-    "online order via Flipkart",
-    "fuel payment at IndianOil",
-    "POS at Big Bazaar",
-    "mobile recharge via Paytm",
-    "utility bill on PhonePe",
-    "cash withdrawal at SBI ATM",
-    "grocery at DMart",
-    "travel booking via IRCTC",
-    "electronics at Croma"
+    "Excess wdl charges",
+    "ATM AMC CHGS",
+    "Cash handling charges",
+    "ATM WDL CHARGES",
+    "MIN BAL CHGS"
 ];
 
-const accountList = ["SB-111111111", "SB-222222222", "SB-999999999"];
+const accountList = ["111111111", "222222222", "999999999"];
 
 const generateTransactionsForDate = (accountNumber, date) => {
     const formattedDate = formatDate(date);
@@ -40,7 +35,6 @@ const generateTransactionsForDate = (accountNumber, date) => {
 
     for (let i = 0; i < transactionCount; i++) {
         const activity = activityTypes[Math.floor(Math.random() * activityTypes.length)];
-        const purchaseAmount = Math.floor(Math.random() * (60000 - 1000 + 1)) + 1000;
         const excessCharge = Math.floor(Math.random() * (700 - 100 + 1)) + 100;
 
         transactions.push({
@@ -48,16 +42,7 @@ const generateTransactionsForDate = (accountNumber, date) => {
             Valid_Date: formattedDate,
             Post_Date: formattedDate,
             Transaction_Type: "DR",
-            Narration: `Transaction of ₹${purchaseAmount} (${activity})`,
-            Amount: purchaseAmount.toFixed(2)
-        });
-
-        transactions.push({
-            Account_Number: accountNumber,
-            Valid_Date: formattedDate,
-            Post_Date: formattedDate,
-            Transaction_Type: "DR",
-            Narration: `Excess bank charge for ${activity}`,
+            Narration: `${activity}`,
             Amount: excessCharge.toFixed(2)
         });
     }
@@ -65,68 +50,76 @@ const generateTransactionsForDate = (accountNumber, date) => {
     return transactions;
 };
 
-const generateRealisticTransactionsFor7Days = () => {
+
+const generateTransactionsForDateRange = (startDate, endDate) => {
     const allTransactions = [];
-    const today = new Date();
+    let currentDate = new Date(startDate);  
 
-    for (let i = 0; i < 7; i++) {
-        const currentDate = new Date(today);
-        currentDate.setDate(today.getDate() - i);
-
+    while (currentDate <= endDate) {
         for (const acc of accountList) {
-            const txns = generateTransactionsForDate(acc, currentDate);
+            
+            const txns = generateTransactionsForDate(acc, new Date(currentDate.getTime()));
             allTransactions.push(...txns);
         }
+        currentDate.setDate(currentDate.getDate() + 1);
     }
-
+    
     return allTransactions;
 };
 
 app.use(express.json());
 
 app.post(['/statement/v1/eq-dtxn-chrg', '/statement/v1/eq-ltxn-chrg'], (req, res) => {
-    let { accountNumber, fromDate } = req.query;
-
+    let { Account_Number, From_Date, To_Date } = req.body;
+    console.log(From_Date)
+    console.log(To_Date)
+    
     const today = new Date();
-    const past7 = new Date(today);
-    past7.setDate(today.getDate() - 6);
+    const defaultToDate = today;
+    const defaultFromDate = new Date(today);
+    defaultFromDate.setDate(today.getDate() - 6); // past 7 days
 
-    const allTransactions = generateRealisticTransactionsFor7Days();
+    const fromDateObj = From_Date ? parseDDMMYYYY(From_Date) : defaultFromDate;
+    const toDateObj = To_Date ? parseDDMMYYYY(To_Date) : defaultToDate;
 
-    let filteredTransactions = allTransactions;
+    // Ensure time is set to 00:00:00 for comparison
+    fromDateObj.setHours(0, 0, 0, 0);
+    toDateObj.setHours(23, 59, 59, 999);
+    defaultFromDate.setHours(0, 0, 0, 0);
+    defaultToDate.setHours(23, 59, 59, 999);
 
-    // Filter by account number if provided
-    if (accountNumber) {
-        filteredTransactions = filteredTransactions.filter(
-            txn => txn.Account_Number === accountNumber
-        );
-    }
 
-    // Filter by date if provided
-    if (fromDate) {
-        const fromDateObj = parseDDMMYYYY(fromDate);
-        if (fromDateObj < past7 || fromDateObj > today) {
-            return res.json({
-                "MainStatement_Response": {
-                    "metaData": {
-                        "status": {
-                            "code": "400",
-                            "desc": "Data only available for the past 7 days."
-                        }
+    // Validate date range
+    if (
+        fromDateObj < defaultFromDate ||
+        toDateObj > defaultToDate ||
+        fromDateObj > toDateObj
+    ) {
+        return res.json({
+            "MainStatement_Response": {
+                "metaData": {
+                    "status": {
+                        "code": "400",
+                        "desc": "Data only available for the past 7 days and within a valid date range."
                     }
                 }
-            });
-        }
-
-        const formatted = formatDate(fromDateObj);
-        filteredTransactions = filteredTransactions.filter(
-            txn => txn.Valid_Date === formatted
-        );
+            }
+        });
     }
 
-    const limit = Math.floor(Math.random() * 2) + 3; // 3 or 4
-    const limitedTransactions = filteredTransactions.slice(0, limit);
+    const allTransactions = generateTransactionsForDateRange(fromDateObj, toDateObj);
+    Account_Number = Account_Number.toString()
+    // Filter by Account Number
+    let filteredTransactions = Account_Number
+        ? allTransactions.filter(txn => txn.Account_Number === Account_Number)
+        : allTransactions;
 
+    
+    const limit = Math.floor(Math.random() * 2) + 3; // 3 or 4
+    const shuffled = filteredTransactions.sort(() => 0.5 - Math.random());
+    const limitedTransactions = shuffled.slice(0, limit);
+    // const limitedTransactions = filteredTransactions.slice(0, limit);
+    console.log(limitedTransactions)
     res.json({
         "MainStatement_Response": {
             "metaData": {
@@ -143,6 +136,7 @@ app.post(['/statement/v1/eq-dtxn-chrg', '/statement/v1/eq-ltxn-chrg'], (req, res
         }
     });
 });
+
 
 // Route 1: /statement/v1/eq-dtxn-chrg or /statement/v1/eq-ltxn-chrg
 // app.post(['/statement/v1/eq-dtxn-chrg', '/statement/v1/eq-ltxn-chrg'], (req, res) => {
