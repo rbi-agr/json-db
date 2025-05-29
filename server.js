@@ -110,13 +110,13 @@ app.post(['/statement/v1/eq-dtxn-chrg', '/statement/v1/eq-ltxn-chrg'], (req, res
     const allTransactions = generateTransactionsForDateRange(fromDateObj, toDateObj);
     Account_Number = Account_Number.toString()
     // Filter by Account Number
-    let filteredTransactions = Account_Number
-        ? allTransactions.filter(txn => txn.Account_Number === Account_Number)
-        : allTransactions;
+    // let filteredTransactions = Account_Number
+    //     ? allTransactions.filter(txn => txn.Account_Number === Account_Number)
+    //     : allTransactions;
 
     
     const limit = Math.floor(Math.random() * 2) + 3; // 3 or 4
-    const shuffled = filteredTransactions.sort(() => 0.5 - Math.random());
+    const shuffled = allTransactions.sort(() => 0.5 - Math.random());
     const limitedTransactions = shuffled.slice(0, limit);
     // const limitedTransactions = filteredTransactions.slice(0, limit);
     console.log(limitedTransactions)
